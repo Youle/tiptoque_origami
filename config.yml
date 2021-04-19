@@ -1,0 +1,12 @@
+development:
+  password: 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
+  theme_id: "120230543496"
+  store: tiptoque-origami.myshopify.com
+prod:
+  password: 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
+  theme_id: "96891404424"
+  store: tiptoque-origami.myshopify.com
+preprod:
+  password: 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
+  theme_id: "120230510728"
+  store: tiptoque-origami.myshopify.com

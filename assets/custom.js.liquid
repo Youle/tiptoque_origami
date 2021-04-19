@@ -1,0 +1,198 @@
+(function(){
+  var basket_valid = false;
+  var drawer_section = findDrawerSection();
+  
+  function findDrawerSection() {
+    var toReturn;
+    for(var i = 0; i < sections.instances.length; i++) {
+      var s = sections.instances[i];
+      if(s.id === 'cart-drawer') {
+        toReturn = s;
+      }
+    }
+    
+    return toReturn;
+  }
+  function getProductById(id) {
+    var toReturn;
+    for(var i = 0; i < products.length; i++) {
+      if(products[i].id === id) {
+        toReturn = products[i];
+        break;
+      }
+    }
+    return toReturn;
+  }
+
+  function getAppropriateVariant(product, sku) {
+    var toReturn;
+    for(var i = 0; i < product.variants.length; i++) {
+      if(product.variants[i].sku.toLowerCase() === sku.toLowerCase()) {
+        toReturn = product.variants[i];
+        break;
+      }
+    }
+    return toReturn;
+  }  
+
+  function updateItem(item, type, cb) {
+    if(type !== 'invalid' && item.sku.toLowerCase() !== type.toLowerCase()) {
+      var _p = getProductById(item.product_id);
+      var _variant = getAppropriateVariant(_p, type);
+      CartJS.removeItemById(item.variant_id, {
+        success: function() {
+          CartJS.addItem(_variant.id, item.quantity, {},{
+            success: function(){
+              findDrawerSection().refresh();
+              cb();
+            }
+          });
+        }
+      })
+    } else {
+      cb();
+    }
+  }
+
+  function getDeliveryType() {
+    var zip = $(".js-zipcode").val();
+    var is_zip = zip.match(/\b\d{5}\b/g) && parseInt(zip, 10) >= 1000;
+    if(!is_zip) {
+      return 'invalid';
+    }
+    var zip_list = $('.js-zip-codes').attr('data-value');
+    return zip_list.indexOf(zip) !== -1 ? 'intra_muros' : 'extra_muros';
+  }
+
+  function updateDeliveryCart() {
+    var $d = $.Deferred();
+
+    CartJS.getCart({
+      success: function() {
+        var to_update = [];
+        var updated = 0;
+        var delivery_type = getDeliveryType();
+        var items = CartJS.cart.items;
+        var total = items.length;
+        if(!total) {
+        	$d.resolve();
+        }
+        for(var i = 0; i < total; i++) {
+          updateItem(items[i], delivery_type, function() {
+            if(++updated === total) {
+              cart.trigger('change', CartJS.cart);
+              $d.resolve();
+            }
+          })
+        }
+      }
+    });
+    return $d;
+  }
+  
+  window.synchronizeCollectionInputs = function(cart) {
+    cart = cart || CartJS.cart;
+    $('.js-qty-input').val('');
+    for(var i = 0; i < cart.items.length; i++) {
+      var item = cart.items[i];
+      var $form = $('.js-qty-form[data-product-id="' + item.product_id + '"]');
+      var $input = $form.find('.js-qty-input');
+      if($form.length) {
+        $input.val(item.quantity).trigger('change');
+      } else if(!!$input.val()){
+        $input.val('').trigger('change');
+      }
+    }
+    $('.js-qty-form').removeClass('disabled')
+    //findDrawerSection().refresh();
+  }
+  
+  function getCartItem(id) {
+    var toReturn;
+    id = parseInt(id, 10);
+  	for(var i = 0; i < CartJS.cart.items.length; i++) {
+      var item = CartJS.cart.items[i];
+      if(item.product_id === id) {
+      	toReturn = item;
+      }
+    }
+    return toReturn;
+  }
+  
+  function updateCartProductQuantity(product_id, value, variant_id) {
+    var cart_item = getCartItem(product_id);
+    if(cart_item && cart_item.quantity === parseInt(value, 10)) {
+    	return;
+    }
+    var success = function() {
+      updateDeliveryCart().then(function(cart){
+      	//synchronizeCollectionInputs(cart);
+        CartJS.getCart({
+          success: function(){
+          	//synchronizeCollectionInputs(CartJS.cart);
+          }})
+      })
+    }
+    if(cart_item) {
+      // Update
+      var quantity = Math.max(0,  value);
+      CartJS.updateItemById(cart_item.id, quantity, {}, {success: success});
+    } else {
+      console.log(product_id, value, variant_id)
+      CartJS.addItem(variant_id, value, {}, {success: success});
+    }
+  }
+  
+  function onAddProductClicked() {
+    var $form = $(this).closest('.js-qty-form'),
+        value = (parseInt($form.find('.js-qty-input').val()) || 0) + 1;
+    $form.addClass('disabled');
+    updateCartProductQuantity($form.attr('data-product-id'), value, $form.attr('data-variant-id'));
+  }
+
+  function onMinusProductClicked() {
+    var $form = $(this).closest('.js-qty-form'),
+        value = (parseInt($form.find('.js-qty-input').val()) || 0) - 1;
+    $form.addClass('disabled');
+    updateCartProductQuantity($form.attr('data-product-id'), Math.max(0, value), $form.attr('data-variant-id'));
+  }
+
+  function onQuantityInputBlurred() {
+    var $form = $(this).closest('.js-qty-form'),
+        value = $(this).val();
+    $form.addClass('disabled');
+    updateCartProductQuantity($form.attr('data-product-id'), value, $form.attr('data-variant-id'));
+  }
+  
+  function initializeCollectionInputs() {
+    synchronizeCollectionInputs();
+    $('body')
+    .on('click.addProduct', '.js-qty-button-plus', onAddProductClicked)
+    .on('click.minusProduct', '.js-qty-button-minus', onMinusProductClicked)
+    .on('blur.qtyField', '.js-qty-input', onQuantityInputBlurred)
+  }
+
+  $('body').on('submit', '.js-cart-form', function(e){
+    if(!basket_valid) {
+      e.preventDefault();
+      updateDeliveryCart().then(function(){
+        basket_valid = true;
+        $('.js-cart-form').find('[type="submit"]').trigger('click');
+      });
+    }
+  }).on('click', '.js-validate-zip', function(){
+    $(".js-zipcode").val($(this).parent().find(".js-zipcode").val());
+    var delivery_type = getDeliveryType();
+    var zip = $(".js-zipcode").val();
+    $(".cart-drawer__checkout").prop("disabled", delivery_type === 'invalid');
+    localStorage.setItem('tt_origami_zip', delivery_type === 'invalid' ? '' : $(".js-zipcode").val());
+  });
+  
+  $('.js-zipcode').val(localStorage.getItem('tt_origami_zip'));
+  $('.js-validate-zip').trigger('click');
+  updateDeliveryCart().then(function() {
+    if($('.js-qty-input').length) {
+      initializeCollectionInputs();
+    }
+  });
+})();
