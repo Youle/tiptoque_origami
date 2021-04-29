@@ -16,7 +16,7 @@
   function getProductById(id) {
     var toReturn;
     for(var i = 0; i < products.length; i++) {
-      if(products[i].id === id) {
+      if(parseInt(products[i].id) === parseInt(id)) {
         toReturn = products[i];
         break;
       }
@@ -26,7 +26,10 @@
 
   function getAppropriateVariant(product, sku) {
     var toReturn;
+
+    if(!product) { return; }
     for(var i = 0; i < product.variants.length; i++) {
+      console.log(product, sku)
       if(product.variants[i].sku.toLowerCase() === sku.toLowerCase()) {
         toReturn = product.variants[i];
         break;
@@ -97,14 +100,18 @@
       var item = cart.items[i];
       var $form = $('.js-qty-form[data-product-id="' + item.product_id + '"]');
       var $input = $form.find('.js-qty-input');
+      var $index = $form.find('.js-qty-index');
       if($form.length) {
         $input.val(item.quantity).trigger('change');
+        $index.text(item.quantity);
+        if(item.quantity === 0) {
+          $form.closest('.js-cart-item').find('.js-cart-item-delete').trigger('click')
+        }
       } else if(!!$input.val()){
         $input.val('').trigger('change');
       }
     }
     $('.js-qty-form').removeClass('disabled')
-    //findDrawerSection().refresh();
   }
   
   function getCartItem(id) {
@@ -121,6 +128,7 @@
   
   function updateCartProductQuantity(product_id, value, variant_id) {
     var cart_item = getCartItem(product_id);
+    if(value === 0) { $('.js-qty-form[data-product-id="' + product_id + '"]').closest('.js-cart-item').find('.js-cart-item-delete').trigger('click'); }
     if(cart_item && cart_item.quantity === parseInt(value, 10)) {
     	return;
     }

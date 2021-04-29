@@ -44,21 +44,29 @@
 
           {% for item in cartItems %}
             <div class="cart-drawer__item{% if item == 'template' %} ajax-cart__template{% endif %}" data-cart-item data-cart-item-id="{{ item.key }}" aria-live="polite">
-
               {% assign itemImage = true %}
               {% if item.image == blank and item.product.featured_image == blank %}
                 {% assign itemImage = false %}
               {% endif %}
-              <a href="{{ item.url }}" class="cart-drawer__item-image" style="background-image: {% if itemImage %}url('{{ item | img_url: 'medium' }}'){% else %}none{% endif %};" data-cart-item-background-image data-cart-item-href></a>
-
-              <div class="cart-drawer__item-content">
-                <a href="{{ item.url }}" class="h4 cart-drawer__item-title" data-cart-item-href data-cart-item-title>{{ item.product.title }}</a>
-                <p class="cart-drawer__item-subtitle" data-cart-item-variant-title>
-                  {% unless item.product.has_only_default_variant %}
-                    {{ item.variant.title }}
-                  {% endunless %}
-                </p>
-
+              <div class="cart-drawer__item-content js-cart-item">
+                <div style="flex: 1">
+                  <a href="{{ item.url }}" class="h4 cart-drawer__item-title" data-cart-item-href data-cart-item-title>{{ item.product.title }}</a>
+                  <p class="cart-drawer__item-subtitle" data-cart-item-variant-title>
+                    {% unless item.product.has_only_default_variant %}
+                      {{ item.variant.title }}
+                    {% endunless %}
+                  </p>
+                </div>
+                  <div style="display: flex" class="js-qty-form" data-product-id="{{item.product_id}}" data-variant-id="{{item.variant.id}}" data-cart-item-big-container-quantity>
+                    <div class="js-qty-button-minus" style="padding: 12px; cursor: pointer;">-</div>
+                    <div class="js-qty-index" style="padding: 12px;" data-cart-item-container-quantity>{{ item.quantity }}</div>
+                    <input type="number" min="0" step="1" placeholder="0" value="{{ item.quantity }}" class="js-qty-input qty_form_input hidden">
+                    <div class="js-qty-button-plus" style="padding: 12px; cursor: pointer;">+</div>
+                  </div>
+                  {% comment %}
+                  <label for="quantity_{{ item.key }}" class="label--hidden" data-cart-item-label-quantity>{{ 'cart.general.item_quantity' | t }}</label>
+                  <input id="quantity_{{ item.key }}" class="cart-drawer__item-quantity" value="{{ item.quantity }}" type="number" pattern="\d*" min="1" aria-label="{{ 'cart.general.item_quantity' | t }}" data-cart-item-input-quantity>
+                  {% endcomment %}
                 <ul class="cart-drawer__item-properties" data-cart-item-property-list>
                   {% comment %}
                   If the item has no properties, then include a property element with a template class
@@ -91,10 +99,10 @@
                   {% endfor %}
                 </ul>
 
-                <p class="cart-drawer__item-price-container" data-cart-item-price-container>
+                <p class="cart-drawer__item-price-container" style="width: 70px" data-cart-item-price-container>
                   {%- if item.original_price != item.final_price -%}
                     <span class="visually-hidden">{{ 'products.product.regular_price' | t }}</span>
-                    <del class="cart-item__original-price">{{ item.original_price | money }}</del>
+                    <del class="cart-item__original-price">{{ item.original_line_price | money }}</del>
                     <span class="visually-hidden">{{ 'products.product.sale_price' | t }}</span>
                     <span class="order-discount cart-item__price">{{ item.final_price | money }}</span>
                   {%- else -%}
@@ -114,7 +122,7 @@
                 {% if item.line_level_discount_allocations != blank %}
                   {%- assign itemDiscounts = item.line_level_discount_allocations -%}
                 {% endif %}
-
+                {% comment %}
                 <ul class="order-discount order-discount--list order-discount--title order-discount--cart" aria-label="{{ 'customer.order.discount' | t }}" data-cart-item-discount-list>
                   {%- for discount_allocation in itemDiscounts -%}
                     <li class="order-discount__item{% if discount_allocation == 'template' %} ajax-cart__template{% endif %}" data-cart-item-discount>
@@ -123,10 +131,8 @@
                   {%- endfor -%}
                 </ul>
 
-                <button class="cart-drawer__item-delete btn-link" type="button" data-cart-item-delete>{{ 'cart.general.remove' | t }}</button>
-
-                <label for="quantity_{{ item.key }}" class="label--hidden" data-cart-item-label-quantity>{{ 'cart.general.item_quantity' | t }}</label>
-                <input id="quantity_{{ item.key }}" class="cart-drawer__item-quantity" value="{{ item.quantity }}" type="number" pattern="\d*" min="1" aria-label="{{ 'cart.general.item_quantity' | t }}" data-cart-item-input-quantity>
+                <button class="js-cart-item-delete cart-drawer__item-delete btn-link" type="button" data-cart-item-delete>{{ 'cart.general.remove' | t }}</button>
+                {% endcomment %}
 
               </div>
               <p class="cart-item__message text-center" aria-hidden="true" data-item-message></p>

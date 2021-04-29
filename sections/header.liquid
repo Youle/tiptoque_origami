@@ -227,8 +227,10 @@
     </div>
   </header>
 </div>
-<script type="text/javascript">  
-  var products = {{collections[section.settings.collection_intra].products | json}} 
+<script type="text/javascript">
+  {%- paginate collections[section.settings.collection_intra].products by 200 -%}
+  var products = {{collections[section.settings.collection_intra].products | json}};
+  {%- endpaginate -%}
 </script>  
 {% schema %}
 {

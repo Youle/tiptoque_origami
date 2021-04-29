@@ -2275,7 +2275,7 @@ var currency = {
       precision = defaultTo(precision, 2);
       thousands = defaultTo(thousands, ',');
       decimal = defaultTo(decimal, '.');
-      var tax = 20;
+      var tax = 0;
       number += number * tax / 100;
 
       if (isNaN(number) || number === null) {
@@ -2499,6 +2499,8 @@ var selectors$8 = {
   itemDiscountAmount: '[data-cart-item-discount-amount]',
   itemLabelQuantity: '[data-cart-item-label-quantity]',
   itemInputQuantity: '[data-cart-item-input-quantity]',
+  itemLineQuantityBigContainer: '[data-cart-item-big-container-quantity]',
+  itemLineQuantityContainer: '[data-cart-item-container-quantity]',
   itemDelete: '[data-cart-item-delete]',
   itemPriceContainer: '[data-cart-item-price-container]',
   itemLinePriceContainer: '[data-cart-item-line-price-container]',
@@ -2617,6 +2619,8 @@ window.ajaxCart = {
       .remove();
 
     $(selectors$8.itemList, $container).prepend(this._createItemList(state));
+    $(selectors$8.itemList, $container).append(this._createDiscountsList(state));
+
 
     $(selectors$8.cartNoteInput, $container).val(state.note);
 
@@ -2639,6 +2643,44 @@ window.ajaxCart = {
     );
 
     return $container;
+  },
+
+  _createDiscountsList: function (state) {
+    var _discounts = [];
+    var passed_discounts = {}
+    $.map(state.items, function (item) {
+      for(var i = 0; i < item.discounts.length; i++) {
+        var _item = passed_discounts[item.discounts[i].title] || {quantity: 0, total: 0}
+        _item.quantity += item.quantity;
+        _item.total += item.discounts[i].amount;
+        _item.title = item.discounts[i].title;
+        _item.product_id = item.product_id;
+        _item.id = item.id;
+        passed_discounts[item.discounts[i].title] = _item;
+      }
+    });
+    for (var k in passed_discounts) {
+      var item = passed_discounts[k];
+      var $item = this.$itemTemplate
+          .clone()
+          .removeClass(classes$8.cartTemplate);
+      $(selectors$8.itemTitle, $item).text(item.title);
+      $(selectors$8.itemLineQuantityContainer, $item).html(item.quantity);
+      $(selectors$8.itemInputQuantity, $item).val(item.quantity);
+      $(selectors$8.itemPriceContainer, $item).html('-' + this._createItemProductPrice(
+          item.total / item.quantity,
+          item.total / item.quantity
+      ));
+      $(selectors$8.itemLineQuantityBigContainer, $item).attr({
+        'data-product-id': item.product_id,
+        'data-variant-id': item.id
+      });
+      $(selectors$8.itemVariantTitle, $item).remove();
+      $(selectors$8.itemLineQuantityBigContainer + ' > *:not(.js-qty-index)', $item).css({opacity:0, 'pointer-events': 'none'});
+      $(selectors$8.itemHref, $item).removeAttr('href')
+      _discounts.push($item)
+    }
+    return _discounts;
   },
 
   _createItemList: function(state) {
@@ -2681,6 +2723,13 @@ window.ajaxCart = {
         $(selectors$8.itemPriceContainer, $item).html(itemPrice);
 
         $(selectors$8.itemLinePriceContainer, $item).html(itemLinePrice);
+
+        $(selectors$8.itemLineQuantityContainer, $item).html(item.quantity);
+
+        $(selectors$8.itemLineQuantityBigContainer, $item).attr({
+          'data-product-id': item.product_id,
+          'data-variant-id': item.id
+        });
 
         $(selectors$8.itemLabelQuantity, $item).attr(
           'for',
@@ -2729,8 +2778,7 @@ window.ajaxCart = {
 
   _createItemProductPrice: function(original_price, final_price) {
     var itemPrice = '';
-
-    if (original_price !== final_price) {
+    if (false && original_price !== final_price) {
       itemPrice +=
         '<span class="visually-hidden">' +
         theme.strings.regularPrice +

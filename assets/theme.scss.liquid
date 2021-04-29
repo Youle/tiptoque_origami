@@ -2928,11 +2928,9 @@ $card-image-placeholder: rgba($color-body-text, 0.35);
 }
 
 .cart-drawer__item-content {
-  margin-left: 20%;
-  padding-left: $gutter;
-  padding-right: 70px;
-  padding-bottom: $gutter;
-
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
   @include media-query($small) {
     margin-left: 15%;
     padding-bottom: $gutter;
@@ -2942,7 +2940,7 @@ $card-image-placeholder: rgba($color-body-text, 0.35);
 .cart-drawer__item-title {
   margin-bottom: 0;
   display: inline-block;
-  font-size: rem(18);
+  font-size: rem(16);
   text-decoration: none;
 
   @include media-query($small) {
@@ -2972,9 +2970,6 @@ $card-image-placeholder: rgba($color-body-text, 0.35);
 }
 
 input[type="number"].cart-drawer__item-quantity {
-  position: absolute;
-  top: 60px;
-  right: 0;
   width: 50px;
   padding: 5px;
   font-weight: $font-weight-bold;
